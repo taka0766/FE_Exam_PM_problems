@@ -1,122 +1,88 @@
 #!/usr/bin/env python3
 # h30_f_q8.py : 基本情報技術者試験 平成30年度秋 午後問題 問8
 
-######################################################
-## グローバル値
-######################################################
-#文字型
-Operator = [""] * 100
-#整数型
-OpCnt = 0
-Priority = [0] * 100
-Value = [0] * 100
-#文字型
-chr = 0
-#整数型
-i = 0
-ip = 0
-nest = 0
+from typing import List, Tuple
 
-## compute()の引数
-#文字型
-Expression = [""]* 100
-#整数型
-Explen = 0
+def compute(expression: str) -> int:
+    """数式を計算する。
 
-##入力値
-Expression = "2*(34-(5+67)/8)"
-Explen = 15
-#Expression = "(+2)*((-3)+(-4))" #設問3 例2
-#Explen = 16
-#Expression = "+2*(-3+(-4))" #設問3 例3
-#Explen = 12
-##結果
-Answer = 0
+    Args:
+        expression: 計算する数式（例: "2*(34-(5+67)/8)"）
 
-######################################################
-## プログラム１
-######################################################
-def compute(Expression, Explen):
-    compute_analysis()
-    compute_calculation()
+    Returns:
+        計算結果
+    """
+    operators, priorities, values = compute_analysis(expression)
+    return compute_calculation(operators, priorities, values)
 
-    return Value[0]
+def compute_analysis(expression: str) -> Tuple[List[str], List[int], List[int]]:
+    """数式を解析し、演算子、優先順位、値を抽出する。
 
-######################################################
-## プログラム２
-######################################################
-def compute_analysis():
-    global Operator
-    global OpCnt
-    global Value
-    global nest
-    global Priority
-    global Value
-    global chr
+    Args:
+        expression: 解析する数式
 
-    for i in range(Explen):
-        chr = Expression[i]
-        if(('0' <= chr) and (chr <= '9')): ##数字0～9か?
-            Value[OpCnt] = 10 * Value[OpCnt] + int(chr)
-        elif((chr == '+') or (chr == '-') or (chr == '*') or (chr == '/')):
-            Operator[OpCnt] = chr
-            if((chr == '+') or (chr == '-')):
-                Priority[OpCnt] = nest + 1
-            else:
-                Priority[OpCnt] = nest + 2
-        
-            OpCnt = OpCnt + 1
-            Value[OpCnt] = 0
+    Returns:
+        演算子のリスト、優先順位のリスト、値のリストのタプル
+    """
+    operators: List[str] = []
+    priorities: List[int] = []
+    values: List[int] = [0]
+    nest: int = 0
 
-        elif(chr == '('):
-            nest = nest + 10
+    for char in expression:
+        if '0' <= char <= '9':
+            values[-1] = 10 * values[-1] + int(char)
+        elif char in ('+', '-', '*', '/'):
+            operators.append(char)
+            priorities.append(nest + (1 if char in ('+', '-') else 2))
+            values.append(0)
+        elif char == '(':
+            nest += 10
+        elif char == ')':
+            nest -= 10
 
-        elif(chr == ')'):
-            nest = nest - 10
-    
+    return operators, priorities, values
 
-######################################################
-## プログラム３
-######################################################
-def compute_calculation():
-    global Operator
-    global OpCnt
-    global Value
-    global Priority
-    global Value
-    global chr
-    global ip
-    global i
+def compute_calculation(operators: List[str], priorities: List[int], values: List[int]) -> int:
+    """演算子、優先順位、値に基づいて計算結果を算出する。
 
-    while (OpCnt > 0):
+    Args:
+        operators: 演算子のリスト
+        priorities: 優先順位のリスト
+        values: 値のリスト
+
+    Returns:
+        計算結果
+    """
+    while len(operators) > 0:
         ip = 0
-        i = 1
-        while(i < OpCnt):
-            if(Priority[ip] < Priority[i]):
+        for i in range(1, len(operators)):
+            if priorities[ip] < priorities[i]:
                 ip = i
-            i += 1
 
-        chr = Operator[ip]
+        char = operators[ip]
 
-        if(chr == '+'):
-            Value[ip] = Value[ip] + Value[ip + 1]
-        elif(chr == '-'):
-            Value[ip] = Value[ip] - Value[ip + 1]
-        elif(chr == '*'):
-            Value[ip] = Value[ip] * Value[ip + 1]
-        elif(chr == '/'):
-            Value[ip] = Value[ip] / Value[ip + 1]
+        if char == '+':
+            values[ip] += values[ip + 1]
+        elif char == '-':
+            values[ip] -= values[ip + 1]
+        elif char == '*':
+            values[ip] *= values[ip + 1]
+        elif char == '/':
+            values[ip] = int(values[ip] / values[ip + 1]) # int型にキャスト（元の実装に準ずる）
 
-        for i in range(ip + 1, OpCnt, 1):
-            Value[i] = Value[i + 1]
-            Operator[i - 1] = Operator[i]
-            Priority[i - 1] = Priority[i]
+        for i in range(ip + 1, len(operators)):
+            values[i] = values[i + 1]
+            operators[i - 1] = operators[i]
+            priorities[i - 1] = priorities[i]
 
-        OpCnt = OpCnt -1
+        operators.pop()
+        priorities.pop()
+        values.pop()
 
+    return values[0]
 
-######################################################
-## 実行（関数呼び出し箇所）
-######################################################
-Answer = compute(Expression, Explen)
-print("Answer:"+ str(Answer))
+# 実行
+expression = "2*(34-(5+67)/8)"
+answer = compute(expression)
+print("Answer:", answer)
